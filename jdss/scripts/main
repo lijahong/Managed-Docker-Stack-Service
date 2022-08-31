@@ -1,0 +1,180 @@
+#!/bin/bash
+
+#create temp file
+selectmenu=$(mktemp -t test.XXX) #menu select - main
+stacklist=$(mktemp -t test.XXX) #contain stack ls list - showlist
+stackselect=$(mktemp -t test.XXX) #selected stack - showlist
+stackname_temp=$(mktemp -t test.XXX) #STACK NAME - CREATE
+stackservice_temp=$(mktemp -t test.XXX) #Service name - CREATE
+stackreplicas_temp=$(mktemp -t test.XXX) #REPLICAS NUMBER - CREATE
+
+#show stack & service list
+showlist(){
+	#get stack ls list by file
+	count=$[ 0 + 1 ]
+	echo "" > $stacklist
+	docker stack ls | while read line
+	do
+		#except column name
+        	if [ $count -gt 1 ]
+        	then
+                	name=$(echo $line | grep -v NAME | gawk {'print $1'})
+                	service=$(echo $line | grep -v NAME | gawk {'print "SERVICE=" $2 "==ORCHESTRATOR=" $3'})
+			#modify for radiolist
+                	echo "$name '$service' OFF" >> $stacklist
+        	fi
+        	count=$[ $count + 1 ]
+	done
+	#get variable for stack list file
+	stackstr=$(cat $stacklist)
+	#radio list for stack
+	dialog --title "STACK LIST" --radiolist "CHOOSE STACK FOR FIND SERVICES" 15 50 0 $stackstr 2>$stackselect
+	if [ $? -eq 0 ] #if you choose ok
+	then
+		#if user do wrong usement -> select file is empty
+		if [ ! -s $stackselect ]
+		then
+			dialog --title "WRONG USEMENT" --msgbox "Input Method is space -> enter" 8 20
+		else
+			#get service list for choose stack
+        		servicelist=$(mktemp -t test.XXX) #get docker stack ps result file
+       	 		stackname=$(cat $stackselect)
+        		docker stack ps $stackname > $servicelist
+        		dialog --title "$stackname Service" --textbox $servicelist 0 0
+			if [ $? -eq 0 ]
+			then
+				network_ip=$(docker network inspect $stackname | grep Subnet | gawk {'print $2'} | tr -d ',' | tr -d '"')
+                        	network_subnet=$(docker network inspect $stackname | grep Gateway | gawk {'print $2'} |  tr -d '"')
+                        	network_scope=$(docker network inspect $stackname -f "{{.Scope}}")
+                        	network_driver=$(docker network inspect $stackname -f "{{.Driver}}")
+                        	host_port=$(docker service inspect ${stackname}_proxy -f "{{.Endpoint.Ports"}} | gawk '{print $4}')
+I
+                        	dialog --title "STACK INFORMATION" --msgbox "$stackname Information \n Network Ip : $network_ip \n Network Subnet : $network_subnet \n Network_Scope : $network_scope \n Network Driver : $network_driver \n Access Port : $host_port" 10 50
+
+			fi
+
+        		rm -rf $servicelist 2> /dev/null
+		fi
+	fi
+}
+
+#delect stack function
+deletestack(){
+	count=$[ 0 + 1 ]
+        echo "" > $stacklist
+        docker stack ls | while read line
+        do
+                #except column name
+                if [ $count -gt 1 ]
+                then
+                        name=$(echo $line | grep -v NAME | gawk {'print $1'})
+                        service=$(echo $line | grep -v NAME | gawk {'print "SERVICE=" $2 "==ORCHESTRATOR=" $3'})
+                        #modify for radiolist
+                        echo "$name '$service' OFF" >> $stacklist
+                fi
+                count=$[ $count + 1 ]
+        done
+        #get variable for stack list file
+        stackstr=$(cat $stacklist)
+        #radio list for stack
+        dialog --title "DELETE STACK" --radiolist "CHOOSE STACK FOR DELETE" 15 50 0 $stackstr 2>$stackselect
+        if [ $? -eq 0 ] #if you choose ok
+        then
+		#if user do wrong usement -> select file is empty
+                if [ ! -s $stackselect ]
+                then
+                        dialog --title "WRONG USEMENT" --msgbox "Input Method is space -> enter" 8 20
+                else
+			#SHOW CONFIRM MENU FOR DELETE -> file content is exist
+               	 	stackname=$(cat $stackselect)
+			dialog --title "Delete Confirm" --yesno "ARE YOU SURE FOR DELETE STACK - $stackname ?" 10 50
+		
+			#IF YOU CHOOSE OK
+			if [ $? -eq 0 ] 
+			then
+				#Delete selected stack & overlay network
+				docker stack rm $stackname > /dev/null
+				docker network rm $stackname > /dev/null
+
+				#if service is wordpress, then remove volume too
+				iswordpress=$(docker volume ls | grep $stackname)
+				if [ -n "$iswordpress"  ]
+				then
+					dialog --title "Volume Delete" --msgbox "Volume for Mysql will remove" 10 50
+					sleep 10
+					docker volume rm -f ${stackname}_dbvol
+				fi
+
+				if [ $? -eq 0 ]
+				#if delect is complete well, show confirm message
+				then
+					dialog --title "Delete Confirm" --msgbox "$stackname STACK DELETE COMPLETE" 10 50
+				fi
+
+			fi
+		fi
+        fi
+
+}
+
+stackcreate(){
+	
+	dialog --title "STACK NAME" --inputbox "Pls Input Stack Name : " 10 50 2>$stackname_temp
+	stack_name=$(cat $stackname_temp)
+	if [[ $? -eq 0 ]] && [[ -n $stack_name ]]
+	then
+		dialog --title "Select Service" --radiolist "Pls Select Deploy Service" 10 80 0 "nginx" "WEB Service by nginx & HAproxy" ON "httpd" "WEB Service by httpd & HAproxy" OFF "wordpress" "Blog Service by wordpress & mysql & HAproxy" OFF 2> $stackservice_temp
+		choice=$(cat $stackservice_temp) #user choice service
+		if [[ $? -eq 0 ]] && [[ -n $choice ]]
+		then
+			dialog --title "REPLICAS" --radiolist "Pls Select Replicas Number" 10 50 0 1 "replicas=1" ON 2 "replicas=2" OFF 3 "replicas=3" OFF 4 "replicas=4" OFF 5 "replicas=5" OFF 6 "replicas=6" OFF 2>$stackreplicas_temp
+			stack_replicas=$(cat $stackreplicas_temp)
+
+			if [[ $? -eq 0 ]] && [[ -n $stack_replicas ]]
+			then
+				#if user choice web service nginx or http
+				if [[ "$choice" == "nginx" ]] || [[ "$choice" == "httpd" ]]
+				then
+					/home/rapa/jdss/scripts/makeweb.sh $stack_name $stack_replicas $choice
+				elif [[ "$choice" == "wordpress" ]]
+				then
+					/home/rapa/jdss/scripts/makewp.sh $stack_name $stack_replicas $choice
+				fi
+			fi
+		fi
+	fi
+}
+
+#menu start
+while [ 1 ]
+do
+        # 메인메뉴 출력하기
+        dialog --menu "JDSS SERIVE" 20 40 8 1 "SHOW LIST" 2 "DELETE STACK" 3 "CREATE STACK" 0 "종료" 2> $selectmenu
+        # 종료코드 확인하여 cancel 이면 프로그램 종료
+        if [ $? -eq 1 ]
+        then
+                break
+        fi
+
+        selection=$(cat $selectmenu)
+        case $selection in
+        1)
+                showlist ;;
+        2)
+                deletestack ;;
+        3)
+                stackcreate ;;
+        0)
+                break ;;
+        *)
+                dialog --msgbox "WRONG SELECT MENU - Pls SELECT EXIST MENU NUMBER" 10 40
+        esac
+done
+
+#delect temp file
+rm -rf $selectmenu 2> /dev/null
+rm -rf $stacklist 2> /dev/null
+rm -rf $stackselect 2> /dev/null
+rm -rf $stackname_temp 2> /dev/null
+rm -rf $stackservice_temp 2> /dev/null
+rm -rf $stackreplicas_temp 2> /dev/null

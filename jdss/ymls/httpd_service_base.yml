@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+  httpd:
+    image: 211.183.3.103:80/jdss_repo/setname_httpd:v1
+    deploy:
+      replicas: set_replicas
+      placement:
+        constraints: [node.role == worker]
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+    environment:
+      SERVICE_PORTS: 80
+    networks:
+      - set_network
+
+  proxy:
+    image: dockercloud/haproxy
+    depends_on:
+      - httpd
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports: # attach on ingress network 1
+      - 80
+    networks: # attach on web network 2 - nginx connect
+      - set_network
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+        max_attempts: 2
+
+networks:
+  set_network:
+    external: true
