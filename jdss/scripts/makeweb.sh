@@ -25,11 +25,11 @@ then
                 then
                 	#get STACK INFORMATION
 
-                	network_ip=$(docker network inspect $stack_name | grep Subnet | gawk {'print $2'} | tr -d ',' | tr -d '"')
-                	network_subnet=$(docker network inspect $stack_name | grep Gateway | gawk {'print $2'} |  tr -d '"')
-                	network_scope=$(docker network inspect $stack_name -f "{{.Scope}}")
-                	network_driver=$(docker network inspect $stack_name -f "{{.Driver}}")
-                	host_port=$(docker service inspect ${stack_name}_proxy -f "{{.Endpoint.Ports"}} | gawk '{print $4}')
+                	network_ip=$(docker network inspect $1 | grep Subnet | gawk {'print $2'} | tr -d ',' | tr -d '"')
+                	network_subnet=$(docker network inspect $1 | grep Gateway | gawk {'print $2'} |  tr -d '"')
+                	network_scope=$(docker network inspect $1 -f "{{.Scope}}")
+                	network_driver=$(docker network inspect $1 -f "{{.Driver}}")
+                	host_port=$(docker service inspect ${1}_proxy -f "{{.Endpoint.Ports"}} | gawk '{print $4}')
 I
                 	#show STACK INFORMATION
                 	dialog --title "WORK COMPLETE" --msgbox "STACK DEPLOY COMPLETE\n Network Ip : $network_ip \n Network Subnet : $network_subnet \n Network_Scope : $network_scope \n Network Driver : $network_driver \n Access Port : $host_port" 10 80
