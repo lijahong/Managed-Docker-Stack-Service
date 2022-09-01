@@ -6,7 +6,7 @@ git clone --quiet $3 /home/rapa/jdss/webpage/$1/ > /dev/null
 
 #it goes to dir, where Dockerfile exist
 
-cp /home/rapa/jdss/webpage/$1/index.html /home/rapa/jdss/dockerfile_dir/httpd/index.html
+cp /home/rapa/jdss/webpage/$1/index2.html /home/rapa/jdss/dockerfile_dir/httpd/index.html
 
 #login
 docker login 211.183.3.103:80 -uadmin -ptest123 > /dev/null 2>&1
