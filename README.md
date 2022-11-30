@@ -1,5 +1,6 @@
 # Docker_JDSS_Project
 
+#### Docker 를 이용한 개인 프로젝트 
 #### JDSS Project 는 Docker Stack 기반의 사용자 맞춤 WEB & Blog 배포 프로젝트 입니다
 
 ---
