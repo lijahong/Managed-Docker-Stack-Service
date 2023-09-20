@@ -1,7 +1,6 @@
-# Docker_JDSS_Project
+# Managed Docker Stack Service
 
-#### Docker 를 이용한 개인 프로젝트 
-#### JDSS Project 는 Docker Stack 기반의 사용자 맞춤 WEB & Blog 배포 프로젝트 입니다
+#### Managed Docker Stack Service 는 Docker Stack 기반의 사용자 맞춤 WEB & Blog 배포 개인 프로젝트 입니다
 
 ---
 
@@ -9,7 +8,7 @@
 
 ### 1.1 프로젝트 주제
 
-- JDSS 는 사용자 요구 사항에 맞는 Docker Stack 을 배포하여 Web & Blog 서비스를 제공해주는 프로젝트 입니다. 사용하기 어려운 CLI 환경이 아닌, 그래픽 환경인 Dialog 로 제공하여 사용자가 더 쉽게 배포 & 조회 & 삭제 할 수 있는 프로그램을 구현하고자 합니다
+- Managed Docker Stack Service 는 사용자 요구 사항에 맞는 Docker Stack 을 배포하여 Web & Blog 서비스를 제공해주는 프로젝트 입니다. 사용하기 어려운 CLI 환경이 아닌, 그래픽 환경인 Dialog 로 제공하여 사용자가 더 쉽게 배포 & 조회 & 삭제 할 수 있는 프로그램을 구현하고자 합니다
 
 ### 1.2 프로젝트 동기
 
